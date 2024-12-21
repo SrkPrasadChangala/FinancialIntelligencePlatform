@@ -23,16 +23,28 @@ class Database:
     def get_connection(cls):
         if not cls._connection_pool:
             cls.initialize()
-        return cls._connection_pool.getconn()
+        try:
+            return cls._connection_pool.getconn()
+        except Exception as e:
+            print(f"Error getting connection from pool: {e}")
+            cls._connection_pool = None  # Reset pool on error
+            cls.initialize()  # Reinitialize pool
+            return cls._connection_pool.getconn()
 
     @classmethod
     def return_connection(cls, connection):
-        cls._connection_pool.putconn(connection)
+        if connection and cls._connection_pool:
+            try:
+                cls._connection_pool.putconn(connection)
+            except Exception as e:
+                print(f"Error returning connection to pool: {e}")
+                connection.close()
 
     @classmethod
     def execute_query(cls, query, parameters=None):
-        conn = cls.get_connection()
+        conn = None
         try:
+            conn = cls.get_connection()
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(query, parameters)
                 conn.commit()
@@ -40,10 +52,12 @@ class Database:
                     return cur.fetchall()
                 return None
         except Exception as e:
-            conn.rollback()
+            if conn:
+                conn.rollback()
             raise e
         finally:
-            cls.return_connection(conn)
+            if conn:
+                cls.return_connection(conn)
 
     @classmethod
     def create_tables(cls):

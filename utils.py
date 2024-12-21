@@ -30,12 +30,18 @@ def get_stock_info(symbol):
         return None
 
 def format_number(number):
-    if number >= 1e9:
-        return f"${number/1e9:.2f}B"
-    elif number >= 1e6:
-        return f"${number/1e6:.2f}M"
-    else:
-        return f"${number:,.2f}"
+    # Convert numpy values to Python float
+    try:
+        if hasattr(number, 'dtype'):  # Check if it's a numpy type
+            number = float(number)
+        if number >= 1e9:
+            return f"${number/1e9:.2f}B"
+        elif number >= 1e6:
+            return f"${number/1e6:.2f}M"
+        else:
+            return f"${number:,.2f}"
+    except (TypeError, ValueError):
+        return "$0.00"  # Fallback for invalid numbers
 
 def calculate_portfolio_value(holdings):
     total_value = 0
