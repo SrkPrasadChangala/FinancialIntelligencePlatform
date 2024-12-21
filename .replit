@@ -17,7 +17,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Stock Trading Platform"
+args = "Streamlit App"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
@@ -28,7 +28,7 @@ task = "workflow.run"
 args = "React Frontend"
 
 [[workflows.workflow]]
-name = "Stock Trading Platform"
+name = "Streamlit App"
 author = "agent"
 
 [workflows.workflow.metadata]

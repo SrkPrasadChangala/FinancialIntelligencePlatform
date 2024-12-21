@@ -11,8 +11,16 @@ from utils.sentiment_analyzer import SentimentAnalyzer
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__, static_folder='frontend/build')
+app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# Configure logging
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+))
+app.logger.addHandler(handler)
+app.logger.setLevel(logging.INFO)
 
 # Initialize database
 try:
@@ -51,12 +59,10 @@ def health_check():
             'status': 'unhealthy',
             'error': str(e)
         }), 500
-@app.route('/', defaults={'path': ''})
+
 @app.route('/<path:path>')
 def serve(path):
-    if path != "" and os.path.exists(app.static_folder + '/' + path):
-        return send_from_directory(app.static_folder, path)
-    return send_from_directory(app.static_folder, 'index.html')
+    return send_from_directory('frontend/build', path)
 
 
 @app.route('/api/auth/login', methods=['POST'])
