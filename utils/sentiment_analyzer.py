@@ -80,55 +80,22 @@ class SentimentAnalyzer:
             st.warning(f"Error fetching analyst ratings: {str(e)}")
             return 0, None
 
-    @st.cache_data(ttl=60)
-    def get_market_fear_index(self):
-        """Get VIX index data"""
-        try:
-            # Fetch VIX data with explicit parameters
-            vix = yf.download('^VIX', period='5d', progress=False)
-            if vix is not None and not vix.empty:
-                try:
-                    current_vix = float(vix['Close'].iloc[-1])
-                    previous_vix = float(vix['Close'].iloc[0])
-                    vix_change = ((current_vix - previous_vix) / previous_vix) * 100
-                    
-                    # Convert VIX to a sentiment score (-1 to 1)
-                    # VIX ranges typically from 10 (very calm) to 50 (extreme fear)
-                    # Normalize around typical range of 15-35
-                    vix_sentiment = -max(min((current_vix - 15) / 20, 1), -1)
-                    
-                    return vix_sentiment, current_vix, vix_change
-                except (IndexError, ValueError) as e:
-                    st.warning(f"Error processing VIX data: {str(e)}")
-                    return 0, None, 0
-            else:
-                st.warning("No VIX data available")
-                return 0, None, 0
-        except Exception as e:
-            st.warning(f"Error fetching VIX data: {str(e)}")
-            return 0, None, 0
-
     def get_composite_sentiment(_self, symbol):
         """Calculate composite sentiment from all sources"""
         # Get individual sentiments
         news_sentiment, news_confidence = _self.get_news_sentiment(symbol)
         analyst_sentiment, analyst_data = _self.get_analyst_ratings(symbol)
-        fear_sentiment, vix_value, vix_change = _self.get_market_fear_index()
 
         # Weighted average of sentiments
         weights = {'news': 0.3, 'analyst': 0.4, 'fear': 0.3}
 
         composite_sentiment = (news_sentiment * weights['news'] +
-                               analyst_sentiment * weights['analyst'] +
-                               fear_sentiment * weights['fear'])
+                               analyst_sentiment * weights['analyst'])
 
         return {
             'composite': composite_sentiment,
             'news': news_sentiment,
             'analyst': analyst_sentiment,
-            'fear': fear_sentiment,
-            'vix': vix_value,
-            'vix_change': vix_change,
             'analyst_data': analyst_data,
             'news_confidence': news_confidence
         }
