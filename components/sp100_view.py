@@ -12,29 +12,64 @@ SP100_SYMBOLS = [
     'HD', 'AVGO', 'CVX', 'MRK', 'KO'
 ]
 
-@st.cache_data(ttl=60)  # Cache for 1 minute
-def get_sp100_data():
+@st.cache_data(ttl=15)  # Cache for 15 seconds for more frequent updates
+def get_sp100_data(time_range='1d'):
+    """Fetch S&P 100 data with specified time range"""
     data = []
     for symbol in SP100_SYMBOLS:
-        info = get_stock_info(symbol)
-        if info:
-            data.append({
-                'symbol': symbol,
-                'name': info['name'],
-                'market_cap': info['market_cap'],
-                'price': info['price'],
-                'change': info['change'],
-                'sector': info['sector'],
-                'volume': info['volume']
-            })
+        try:
+            stock = yf.Ticker(symbol)
+            hist = stock.history(period=time_range, interval='1m' if time_range == '1d' else '1d')
+            if not hist.empty:
+                info = get_stock_info(symbol)
+                if info:
+                    start_price = hist.iloc[0]['Close']
+                    current_price = hist.iloc[-1]['Close']
+                    price_change = ((current_price - start_price) / start_price) * 100
+                    
+                    data.append({
+                        'symbol': symbol,
+                        'name': info['name'],
+                        'market_cap': info['market_cap'],
+                        'price': info['price'],
+                        'change': price_change,  # Use actual price change over selected period
+                        'sector': info['sector'],
+                        'volume': info['volume'],
+                        'price_history': hist['Close'].tolist(),
+                        'timestamp': hist.index.tolist()
+                    })
+        except Exception as e:
+            st.warning(f"Error fetching data for {symbol}: {str(e)}")
+            continue
     return pd.DataFrame(data)
 
 def render_sp100_view():
     st.subheader("S&P 100 Market Cap Visualization")
-    st.info("Real-time visualization of top 20 S&P 100 companies by market capitalization. Click on a company for detailed view.")
     
-    # Get market data
-    df = get_sp100_data()
+    # Data source attribution
+    st.info("""
+    Real-time visualization of top 20 S&P 100 companies by market capitalization.
+    Data provided by Yahoo Finance (yfinance). Updates every 15 seconds.
+    Click on a company for detailed view.
+    """)
+    
+    # Time range selector
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        time_range = st.select_slider(
+            "Select Time Range",
+            options=['1d', '5d', '1mo', '3mo', '6mo', '1y'],
+            value='1d',
+            help="Choose the time period for market cap changes"
+        )
+    with col2:
+        st.write("Auto-refresh")
+        auto_refresh = st.toggle("Enable", value=True)
+    
+    # Get market data with auto-refresh
+    if auto_refresh:
+        df = st.empty()
+        df = get_sp100_data(time_range)
     
     # Add company selector for detailed view
     selected_symbol = st.selectbox(
@@ -64,6 +99,10 @@ def render_sp100_view():
                df['price'], df['change'], df['sector'], df['volume'])
     ]
 
+    # Identify significant changes (top/bottom 20%)
+    df['significant'] = pd.qcut(df['change'], q=5, labels=['Strong Sell', 'Sell', 'Neutral', 'Buy', 'Strong Buy'])
+    
+    # Create treemap with enhanced visual cues
     fig = go.Figure(go.Treemap(
         labels=df['symbol'],
         parents=[''] * len(df),
@@ -73,13 +112,24 @@ def render_sp100_view():
         customdata=hover_text,
         marker=dict(
             colors=df['change'],
-            colorscale='RdYlGn',
+            colorscale=[
+                [0, 'rgb(165,0,38)'],      # Strong negative
+                [0.2, 'rgb(215,48,39)'],    # Negative
+                [0.4, 'rgb(244,109,67)'],   # Slight negative
+                [0.5, 'rgb(255,255,191)'],  # Neutral
+                [0.6, 'rgb(116,173,209)'],  # Slight positive
+                [0.8, 'rgb(49,130,189)'],   # Positive
+                [1, 'rgb(0,104,55)']        # Strong positive
+            ],
             showscale=True,
             colorbar=dict(
                 title="% Change",
-                thickness=10
+                thickness=10,
+                tickformat='.1f',
+                ticksuffix='%'
             )
-        )
+        ),
+        pathbar=dict(visible=False)
     ))
     
     fig.update_layout(
