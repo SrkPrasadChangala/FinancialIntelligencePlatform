@@ -16,16 +16,21 @@ class SentimentAnalyzer:
         """Analyze sentiment from news articles"""
         try:
             # Get news from Finnhub
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=7)
-            news = self.finnhub_client.company_news(
-                symbol,
-                _from=start_date.strftime('%Y-%m-%d'),
-                to=end_date.strftime('%Y-%m-%d')
-            )
-            
-            if not news:
-                return 0, 0  # Neutral sentiment if no news
+            try:
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=7)
+                news = self.finnhub_client.company_news(
+                    symbol,
+                    _from=start_date.strftime('%Y-%m-%d'),
+                    to=end_date.strftime('%Y-%m-%d')
+                )
+                
+                if not news:
+                    st.warning(f"No recent news found for {symbol}")
+                    return 0, 0  # Neutral sentiment if no news
+            except Exception as e:
+                st.warning(f"Error fetching news for {symbol}: {str(e)}")
+                return 0, 0  # Neutral sentiment on error
             
             sentiments = []
             for article in news[:10]:  # Analyze last 10 news articles

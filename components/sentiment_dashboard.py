@@ -60,12 +60,13 @@ def analyze_market_sentiment(symbols):
         try:
             info = get_stock_info(symbol)
             if info:
-                data = get_stock_data(symbol, period='5d')
-                if data is not None and not data.empty:
-                    # Get multi-source sentiment
-                    sentiment = sentiment_analyzer.get_composite_sentiment(symbol)
-                    
-                    sentiment_data.append({
+                try:
+                    data = get_stock_data(symbol, period='5d')
+                    if data is not None and not data.empty:
+                        # Get multi-source sentiment
+                        sentiment = sentiment_analyzer.get_composite_sentiment(symbol)
+                        
+                        sentiment_data.append({
                         'symbol': symbol,
                         'name': info['name'],
                         'price': info['price'],
@@ -180,4 +181,5 @@ def render_sentiment_dashboard(symbols):
                         cols[3].metric("Sell", rec.get('sell', 0))
                         cols[4].metric("Strong Sell", rec.get('strongSell', 0))
         else:
-            st.error("Unable to fetch sentiment data")
+            st.error("Unable to fetch sentiment data. Please check your API key and internet connection.")
+            st.info("If the error persists, try refreshing the page or selecting fewer stocks to analyze.")
