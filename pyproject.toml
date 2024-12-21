@@ -4,13 +4,17 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
+    "beautifulsoup4>=4.12.3",
     "components>=0.0.1a0",
     "fuzzywuzzy>=0.18.0",
     "pandas>=2.2.3",
     "plotly>=5.24.1",
     "psycopg2-binary>=2.9.10",
     "python-levenshtein>=0.26.1",
+    "requests>=2.32.3",
     "scikit-learn>=1.6.0",
+    "sec-api>=1.0.25",
+    "sqlalchemy>=2.0.36",
     "streamlit>=1.41.1",
     "trafilatura>=2.0.0",
     "yfinance>=0.2.51",

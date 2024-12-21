@@ -112,3 +112,115 @@ class Watchlist:
     def remove_symbol(user_id, symbol):
         query = "DELETE FROM watchlist WHERE user_id = %s AND symbol = %s"
         Database.execute_query(query, (user_id, symbol))
+
+
+class Institution:
+    @staticmethod
+    def create(cik, name):
+        query = """
+        INSERT INTO institutions (cik, name)
+        VALUES (%s, %s)
+        ON CONFLICT (cik) DO UPDATE SET name = EXCLUDED.name
+        RETURNING id, cik, name
+        """
+        result = Database.execute_query(query, (cik, name))
+        return result[0] if result else None
+
+    @staticmethod
+    def get_by_cik(cik):
+        query = "SELECT id, cik, name FROM institutions WHERE cik = %s"
+        result = Database.execute_query(query, (cik,))
+        return result[0] if result else None
+
+    @staticmethod
+    def get_all():
+        query = "SELECT id, cik, name FROM institutions ORDER BY name"
+        return Database.execute_query(query)
+
+class Company:
+    @staticmethod
+    def create(ticker, name):
+        query = """
+        INSERT INTO companies (ticker, name)
+        VALUES (%s, %s)
+        ON CONFLICT (ticker) DO UPDATE SET name = EXCLUDED.name
+        RETURNING id, ticker, name
+        """
+        result = Database.execute_query(query, (ticker, name))
+        return result[0] if result else None
+
+    @staticmethod
+    def get_by_ticker(ticker):
+        query = "SELECT id, ticker, name FROM companies WHERE ticker = %s"
+        result = Database.execute_query(query, (ticker,))
+        return result[0] if result else None
+
+    @staticmethod
+    def get_all():
+        query = "SELECT id, ticker, name FROM companies ORDER BY name"
+        return Database.execute_query(query)
+
+class Holding:
+    @staticmethod
+    def create(institution_id, company_id, shares_held, value_usd, filing_date, quarter, year):
+        query = """
+        INSERT INTO holdings 
+        (institution_id, company_id, shares_held, value_usd, filing_date, quarter, year)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (institution_id, company_id, filing_date)
+        DO UPDATE SET 
+            shares_held = EXCLUDED.shares_held,
+            value_usd = EXCLUDED.value_usd
+        RETURNING id
+        """
+        result = Database.execute_query(
+            query, 
+            (institution_id, company_id, shares_held, value_usd, filing_date, quarter, year)
+        )
+        return result[0] if result else None
+
+    @staticmethod
+    def get_by_company(company_id):
+        query = """
+        SELECT h.*, i.name as institution_name, i.cik
+        FROM holdings h
+        JOIN institutions i ON h.institution_id = i.id
+        WHERE h.company_id = %s
+        ORDER BY h.value_usd DESC
+        """
+        return Database.execute_query(query, (company_id,))
+
+    @staticmethod
+    def get_by_institution(institution_id):
+        query = """
+        SELECT h.*, c.name as company_name, c.ticker
+        FROM holdings h
+        JOIN companies c ON h.company_id = c.id
+        WHERE h.institution_id = %s
+        ORDER BY h.value_usd DESC
+        """
+        return Database.execute_query(query, (institution_id,))
+
+    @staticmethod
+    def get_ownership_changes(company_id, from_date, to_date):
+        query = """
+        WITH ranked_holdings AS (
+            SELECT 
+                institution_id,
+                filing_date,
+                shares_held,
+                value_usd,
+                LAG(shares_held) OVER (PARTITION BY institution_id ORDER BY filing_date) as prev_shares
+            FROM holdings
+            WHERE company_id = %s AND filing_date BETWEEN %s AND %s
+        )
+        SELECT 
+            h.*,
+            i.name as institution_name,
+            i.cik,
+            COALESCE(h.shares_held - h.prev_shares, 0) as shares_change
+        FROM ranked_holdings h
+        JOIN institutions i ON h.institution_id = i.id
+        ORDER BY h.filing_date DESC, h.value_usd DESC
+        """
+        return Database.execute_query(query, (company_id, from_date, to_date))

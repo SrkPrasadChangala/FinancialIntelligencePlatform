@@ -1,8 +1,10 @@
 import streamlit as st
 from database import Database
 from models import User
-from components import portfolio, watchlist, trading, charts
-from components import portfolio, trading, watchlist, sp100_view
+from components import (
+    portfolio, watchlist, trading, charts,
+    sp100_view, institutional_ownership
+)
 from components.sentiment_dashboard import render_sentiment_dashboard
 
 # Initialize the database
@@ -78,7 +80,7 @@ def show_login_page():
 
 def show_trading_platform():
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Portfolio", "Trading", "Watchlist", "S&P 100", "Market Sentiment"])
+    page = st.sidebar.radio("Go to", ["Portfolio", "Trading", "Watchlist", "S&P 100", "Market Sentiment", "Institutional Ownership"])
     
     if st.sidebar.button("Logout"):
         st.session_state.user_id = None
@@ -92,9 +94,11 @@ def show_trading_platform():
         watchlist.render_watchlist(st.session_state.user_id)
     elif page == "S&P 100":
         sp100_view.render_sp100_view()
-    else:  # Market Sentiment
+    elif page == "Market Sentiment":
         from components.sp100_view import SP100_SYMBOLS
         render_sentiment_dashboard(SP100_SYMBOLS)
+    else:  # Institutional Ownership
+        institutional_ownership.render_institutional_ownership()
 
 if __name__ == "__main__":
     main()
