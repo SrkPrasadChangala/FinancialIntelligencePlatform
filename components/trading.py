@@ -1,14 +1,12 @@
 import streamlit as st
 from models import Portfolio, User
-from utils import get_stock_data, get_stock_info, format_number
+from utils import get_stock_data, get_stock_info, format_number, CompanyMatcher
 
 def render_trading():
     st.subheader("Trade Stocks")
     
     # Add help text for demo account
     st.info("Using demo account - All trades are simulated with virtual money!")
-    
-    from utils.company_matcher import CompanyMatcher
     
     # Initialize company matcher if not in session state
     if 'company_matcher' not in st.session_state:

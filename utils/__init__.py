@@ -30,7 +30,6 @@ def get_stock_info(symbol):
         return None
 
 def format_number(number):
-    # Convert numpy values to Python float
     try:
         if hasattr(number, 'dtype'):  # Check if it's a numpy type
             number = float(number)
@@ -53,3 +52,5 @@ def calculate_portfolio_value(holdings):
 def format_change(change):
     color = "green" if change >= 0 else "red"
     return f"<span style='color: {color}'>{change:+.2f}%</span>"
+
+from .company_matcher import CompanyMatcher
