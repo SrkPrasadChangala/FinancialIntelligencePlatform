@@ -8,14 +8,35 @@ def render_trading():
     # Add help text for demo account
     st.info("Using demo account - All trades are simulated with virtual money!")
     
-    symbol = st.text_input("Enter Stock Symbol (e.g., AAPL, GOOGL, MSFT)").upper()
-    if not symbol:
-        st.write("Please enter a stock symbol to start trading.")
+    from utils.company_matcher import CompanyMatcher
+    
+    # Initialize company matcher if not in session state
+    if 'company_matcher' not in st.session_state:
+        st.session_state.company_matcher = CompanyMatcher()
+    
+    query = st.text_input("Enter Company Name or Symbol (e.g., Apple, AAPL, Microsoft, MSFT)")
+    if not query:
+        st.write("Please enter a company name or stock symbol to start trading.")
         return
+    
+    # Try to match the company
+    match = st.session_state.company_matcher.match_company(query)
+    if not match:
+        st.error("Company not found. Please try a different name or symbol.")
+        # Show similar matches as suggestions
+        suggestions = st.session_state.company_matcher.search_companies(query)
+        if suggestions:
+            st.write("Did you mean:")
+            for symbol, name, score in suggestions:
+                st.write(f"- {name} ({symbol})")
+        return
+    
+    symbol, company_name, _ = match
+    st.success(f"Trading {company_name} ({symbol})")
     
     info = get_stock_info(symbol)
     if not info:
-        st.error("Invalid symbol")
+        st.error("Unable to fetch stock information at this time")
         return
     
     # Display stock info
