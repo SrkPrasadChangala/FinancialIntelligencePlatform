@@ -129,10 +129,6 @@ def analyze_market_sentiment(symbols):
                 st.warning(f"Error analyzing sentiment for {symbol}: {str(e)}")
                 continue
 
-        except Exception as e:
-            st.error(f"Unexpected error processing {symbol}: {str(e)}")
-            continue
-
     # Clear progress bar
     progress_bar.empty()
 
