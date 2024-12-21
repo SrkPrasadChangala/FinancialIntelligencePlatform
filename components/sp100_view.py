@@ -23,16 +23,25 @@ def get_sp100_data():
                 'name': info['name'],
                 'market_cap': info['market_cap'],
                 'price': info['price'],
-                'change': info['change']
+                'change': info['change'],
+                'sector': info['sector'],
+                'volume': info['volume']
             })
     return pd.DataFrame(data)
 
 def render_sp100_view():
     st.subheader("S&P 100 Market Cap Visualization")
-    st.info("Real-time visualization of top 20 S&P 100 companies by market capitalization")
+    st.info("Real-time visualization of top 20 S&P 100 companies by market capitalization. Click on a company for detailed view.")
     
     # Get market data
     df = get_sp100_data()
+    
+    # Add company selector for detailed view
+    selected_symbol = st.selectbox(
+        "Select company for detailed view",
+        options=df['symbol'].tolist(),
+        format_func=lambda x: f"{x} - {df[df['symbol'] == x]['name'].iloc[0]}"
+    )
     
     if df.empty:
         st.error("Unable to fetch market data. Please try again later.")
@@ -42,13 +51,35 @@ def render_sp100_view():
     df = df.sort_values('market_cap', ascending=True)
     
     # Create interactive treemap
+    # Create hover text with detailed information
+    hover_text = [
+        f"<b>{symbol}</b> ({name})<br>" +
+        f"Market Cap: {format_number(cap)}<br>" +
+        f"Price: ${price:.2f}<br>" +
+        f"Change: {change:+.2f}%<br>" +
+        f"Sector: {sector}<br>" +
+        f"Volume: {format_number(vol)}"
+        for symbol, name, cap, price, change, sector, vol
+        in zip(df['symbol'], df['name'], df['market_cap'], 
+               df['price'], df['change'], df['sector'], df['volume'])
+    ]
+
     fig = go.Figure(go.Treemap(
         labels=df['symbol'],
         parents=[''] * len(df),
         values=df['market_cap'],
-        textinfo='label+value',
-        hovertemplate='<b>%{label}</b><br>Market Cap: %{value:$.2f}B<br>Price: $%{customdata[0]:.2f}<br>Change: %{customdata[1]:.2f}%',
-        customdata=df[['price', 'change']].values
+        textinfo='label',
+        hovertemplate="%{customdata}<extra></extra>",
+        customdata=hover_text,
+        marker=dict(
+            colors=df['change'],
+            colorscale='RdYlGn',
+            showscale=True,
+            colorbar=dict(
+                title="% Change",
+                thickness=10
+            )
+        )
     ))
     
     fig.update_layout(
@@ -80,3 +111,23 @@ def render_sp100_view():
         }),
         hide_index=True
     )
+    
+    # Show detailed view for selected company
+    if selected_symbol:
+        st.divider()
+        st.subheader(f"Detailed View: {selected_symbol}")
+        
+        col1, col2, col3 = st.columns(3)
+        company_data = df[df['symbol'] == selected_symbol].iloc[0]
+        
+        with col1:
+            st.metric("Price", company_data['price_fmt'])
+        with col2:
+            st.metric("Market Cap", company_data['market_cap_fmt'])
+        with col3:
+            st.metric("24h Change", company_data['change_fmt'])
+            
+        # Show stock chart for selected company
+        from components.charts import render_stock_chart
+        st.subheader("Price History")
+        render_stock_chart(selected_symbol, period='1d', interval='5m')
