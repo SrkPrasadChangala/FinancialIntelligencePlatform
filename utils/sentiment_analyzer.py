@@ -14,7 +14,7 @@ class SentimentAnalyzer:
         self.finnhub_client = finnhub.Client(
             api_key=os.getenv('FINNHUB_API_KEY'))
 
-    @st.cache_data(ttl=300)  # Cache for 5 minutes
+    @st.cache_data(ttl=300, max_entries=100)  # Cache for 5 minutes with limit
     def get_news_sentiment(_self, symbol):
         """Analyze sentiment from news articles"""
         try:

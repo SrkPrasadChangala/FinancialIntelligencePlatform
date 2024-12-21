@@ -80,8 +80,12 @@ def analyze_market_sentiment(symbols):
     progress_bar = st.progress(0)
     total_symbols = len(symbols)
 
-    for idx, symbol in enumerate(symbols):
-        try:
+    # Process symbols in batches of 10 for better performance
+    batch_size = 10
+    for i in range(0, len(symbols), batch_size):
+        batch = symbols[i:i + batch_size]
+        for idx, symbol in enumerate(batch, start=i):
+            try:
             # Update progress
             progress_bar.progress((idx + 1) / total_symbols)
 

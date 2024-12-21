@@ -31,14 +31,12 @@ def get_stock_info(symbol):
 
 def format_number(number):
     try:
-        if hasattr(number, 'dtype'):  # Check if it's a numpy type
-            number = float(number)
-        if number >= 1e9:
-            return f"${number/1e9:.2f}B"
-        elif number >= 1e6:
-            return f"${number/1e6:.2f}M"
-        else:
-            return f"${number:,.2f}"
+        number = float(number) if hasattr(number, 'dtype') else number
+        return next(fmt for val, fmt in [
+            (1e9, f"${number/1e9:.2f}B"),
+            (1e6, f"${number/1e6:.2f}M"),
+            (0, f"${number:,.2f}")
+        ] if number >= val)
     except (TypeError, ValueError):
         return "$0.00"  # Fallback for invalid numbers
 
