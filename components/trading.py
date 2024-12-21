@@ -26,6 +26,10 @@ def render_trading():
         st.metric("Change", f"{info['change']:.2f}%")
     with col3:
         st.metric("Volume", format_number(info['volume']))
+        
+    # Add prediction visualization
+    from components.prediction import render_prediction
+    render_prediction(symbol)
     
     # Trading form
     with st.form(key='trade_form'):
