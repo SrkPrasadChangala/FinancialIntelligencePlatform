@@ -1,0 +1,24 @@
+Create a real-time, interactive data visualization of the S&P 100, focusing on market capitalization changes. The visualization should:
+
+1. **Display the aggregate market cap of the entire S&P 100 index in real-time.** This could be a prominent numerical display or a line chart showing the overall trend.
+
+2. **Visually represent each of the 100 constituent companies.** Consider using a treemap, circle packing diagram, or similar visualization where the size of each element corresponds to the company's market cap.
+
+3. **Enable interactive exploration:**
+    *   **Hovering over a company:** Display detailed information such as:
+        *   Company name and ticker symbol
+        *   Current market cap
+        *   Percentage change in market cap (e.g., daily, hourly)
+        *   Price per share
+        *   Other key metrics (e.g., P/E ratio, volume)
+    *   **Clicking on a company:** Potentially open a more detailed view with historical market cap data, news, or links to financial information.
+
+4. **Show market cap changes dynamically:** As market caps fluctuate in real-time, the visualization should update smoothly and visually reflect these changes (e.g., resizing elements, changing colors to indicate positive/negative movement).
+
+5. **Include a time slider or controls:** Allow users to view historical market cap data for the S&P 100 and its constituents over a specific time range (e.g., last hour, day, week, month).
+
+6. **Consider visual cues for significant changes:** Highlight companies with the largest positive or negative market cap changes using color, animation, or other visual effects.
+
+7. **Data Source:** Specify that the data should be sourced from a reliable financial data provider offering real-time market data (e.g., Refinitiv, Bloomberg, IEX Cloud).
+
+The goal is to create an engaging and informative visualization that allows users to quickly grasp the overall market dynamics of the S&P 100 and easily identify individual company performance in real-time.

@@ -2,6 +2,7 @@ import streamlit as st
 from database import Database
 from models import User
 from components import portfolio, watchlist, trading, charts
+from components import portfolio, trading, watchlist, sp100_view
 
 # Initialize the database
 Database.initialize()
@@ -76,7 +77,7 @@ def show_login_page():
 
 def show_trading_platform():
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Portfolio", "Trading", "Watchlist"])
+    page = st.sidebar.radio("Go to", ["Portfolio", "Trading", "Watchlist", "S&P 100"])
     
     if st.sidebar.button("Logout"):
         st.session_state.user_id = None
@@ -86,8 +87,10 @@ def show_trading_platform():
         portfolio.render_portfolio(st.session_state.user_id)
     elif page == "Trading":
         trading.render_trading()
-    else:  # Watchlist
+    elif page == "Watchlist":
         watchlist.render_watchlist(st.session_state.user_id)
+    else:  # S&P 100
+        sp100_view.render_sp100_view()
 
 if __name__ == "__main__":
     main()
