@@ -86,22 +86,25 @@ def analyze_market_sentiment(symbols):
         batch = symbols[i:i + batch_size]
         for idx, symbol in enumerate(batch, start=i):
             try:
-            # Update progress
-            progress_bar.progress((idx + 1) / total_symbols)
+                # Update progress
+                progress_bar.progress((idx + 1) / total_symbols)
 
-            # Validate symbol format
-            if not isinstance(symbol, str) or not symbol.strip():
-                st.warning(f"Invalid symbol format: {symbol}")
-                continue
+                # Validate symbol format
+                if not isinstance(symbol, str) or not symbol.strip():
+                    st.warning(f"Invalid symbol format: {symbol}")
+                    continue
 
-            info = get_stock_info(symbol)
-            if not info:
-                st.warning(f"Could not fetch info for {symbol}")
-                continue
+                info = get_stock_info(symbol)
+                if not info:
+                    st.warning(f"Could not fetch info for {symbol}")
+                    continue
 
-            data = get_stock_data(symbol, period='5d')
-            if data is None or data.empty:
-                st.warning(f"No historical data available for {symbol}")
+                data = get_stock_data(symbol, period='5d')
+                if data is None or data.empty:
+                    st.warning(f"No historical data available for {symbol}")
+                    continue
+            except Exception as generic_exception:
+                st.error(f"Unexpected processing error for {symbol}: {str(generic_exception)}")
                 continue
 
             # Get multi-source sentiment with timeout handling
