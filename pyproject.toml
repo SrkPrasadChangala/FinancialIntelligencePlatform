@@ -6,8 +6,6 @@ requires-python = ">=3.11"
 dependencies = [
     "components>=0.0.1a0",
     "finnhub-python>=2.4.22",
-    "flask>=3.1.0",
-    "flask-cors>=5.0.0",
     "fuzzywuzzy>=0.18.0",
     "pandas>=2.2.3",
     "plotly>=5.24.1",
