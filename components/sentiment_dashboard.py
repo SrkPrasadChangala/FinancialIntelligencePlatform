@@ -1,34 +1,59 @@
 import streamlit as st
 import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from utils import get_stock_data, get_stock_info, format_number
+from utils.sentiment_analyzer import SentimentAnalyzer
 
-def get_sentiment_emoji(change_percent):
-    """Return appropriate emoji based on price change"""
-    if change_percent >= 3:
+def get_sentiment_emoji(sentiment_score):
+    """Return appropriate emoji based on sentiment score"""
+    if sentiment_score >= 0.6:
         return "🚀"  # Strong bullish
-    elif change_percent >= 1:
+    elif sentiment_score >= 0.2:
         return "😊"  # Bullish
-    elif change_percent >= -1:
+    elif sentiment_score >= -0.2:
         return "😐"  # Neutral
-    elif change_percent >= -3:
+    elif sentiment_score >= -0.6:
         return "😟"  # Bearish
     else:
         return "😱"  # Strong bearish
 
-def get_volume_sentiment(current_volume, avg_volume):
-    """Return volume activity emoji"""
-    if current_volume >= avg_volume * 2:
-        return "🔥"  # High activity
-    elif current_volume >= avg_volume * 1.5:
-        return "📈"  # Increased activity
-    elif current_volume >= avg_volume * 0.5:
-        return "➡️"  # Normal activity
+def get_sentiment_color(sentiment_score):
+    """Return color based on sentiment score"""
+    if sentiment_score >= 0.6:
+        return "rgb(0,255,0)"  # Strong positive
+    elif sentiment_score >= 0.2:
+        return "rgb(144,238,144)"  # Positive
+    elif sentiment_score >= -0.2:
+        return "rgb(255,255,191)"  # Neutral
+    elif sentiment_score >= -0.6:
+        return "rgb(255,160,122)"  # Negative
     else:
-        return "📉"  # Low activity
+        return "rgb(255,0,0)"  # Strong negative
 
-@st.cache_data(ttl=15)
+def create_gauge_chart(value, title):
+    """Create a gauge chart for sentiment visualization"""
+    return go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=(value + 1) * 50,  # Convert from [-1,1] to [0,100]
+        title={'text': title},
+        gauge={
+            'axis': {'range': [0, 100]},
+            'bar': {'color': get_sentiment_color(value)},
+            'steps': [
+                {'range': [0, 20], 'color': "rgb(255,0,0)"},
+                {'range': [20, 40], 'color': "rgb(255,160,122)"},
+                {'range': [40, 60], 'color': "rgb(255,255,191)"},
+                {'range': [60, 80], 'color': "rgb(144,238,144)"},
+                {'range': [80, 100], 'color': "rgb(0,255,0)"}
+            ],
+        }
+    ))
+
+@st.cache_data(ttl=300)  # Cache for 5 minutes
 def analyze_market_sentiment(symbols):
     """Analyze market sentiment for given symbols"""
+    sentiment_analyzer = SentimentAnalyzer()
     sentiment_data = []
     
     for symbol in symbols:
@@ -37,18 +62,22 @@ def analyze_market_sentiment(symbols):
             if info:
                 data = get_stock_data(symbol, period='5d')
                 if data is not None and not data.empty:
-                    avg_volume = data['Volume'].mean()
-                    current_volume = data['Volume'].iloc[-1]
+                    # Get multi-source sentiment
+                    sentiment = sentiment_analyzer.get_composite_sentiment(symbol)
                     
                     sentiment_data.append({
                         'symbol': symbol,
                         'name': info['name'],
                         'price': info['price'],
                         'change': info['change'],
-                        'volume': current_volume,
-                        'avg_volume': avg_volume,
-                        'price_emoji': get_sentiment_emoji(info['change']),
-                        'volume_emoji': get_volume_sentiment(current_volume, avg_volume)
+                        'composite_sentiment': sentiment['composite'],
+                        'news_sentiment': sentiment['news'],
+                        'analyst_sentiment': sentiment['analyst'],
+                        'fear_index': sentiment['fear'],
+                        'vix': sentiment['vix'],
+                        'vix_change': sentiment['vix_change'],
+                        'sentiment_emoji': get_sentiment_emoji(sentiment['composite']),
+                        'analyst_data': sentiment['analyst_data']
                     })
         except Exception as e:
             st.warning(f"Error analyzing sentiment for {symbol}: {str(e)}")
@@ -57,8 +86,9 @@ def analyze_market_sentiment(symbols):
     return pd.DataFrame(sentiment_data)
 
 def render_sentiment_dashboard(symbols):
-    """Render the sentiment dashboard"""
-    st.subheader("Market Sentiment Dashboard")
+    """Render the enhanced sentiment dashboard"""
+    st.title("Market Sentiment Dashboard")
+    st.write("Multi-source sentiment analysis including news, analyst ratings, and market fear index")
     
     # Add auto-refresh toggle
     col1, col2 = st.columns([3, 1])
@@ -70,30 +100,84 @@ def render_sentiment_dashboard(symbols):
         sentiment_df = analyze_market_sentiment(symbols)
         
         if not sentiment_df.empty:
-            # Overall market mood
-            positive_sentiment = (sentiment_df['change'] > 0).mean() * 100
-            market_mood = "🐂" if positive_sentiment > 50 else "🐻"
+            # Market Fear Index (VIX)
+            st.subheader("Market Fear Index (VIX)")
+            vix_value = sentiment_df['vix'].iloc[0]  # Same for all rows
+            vix_change = sentiment_df['vix_change'].iloc[0]
             
-            st.write(f"### Overall Market Mood: {market_mood}")
-            st.progress(positive_sentiment / 100, text=f"{positive_sentiment:.1f}% Bullish")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("VIX", f"{vix_value:.2f}", f"{vix_change:+.2f}%")
+            with col2:
+                fear_fig = create_gauge_chart(-sentiment_df['fear_index'].mean(), "Market Fear Level")
+                st.plotly_chart(fear_fig, use_container_width=True)
             
-            # Display sentiment cards
-            st.write("### Individual Stock Sentiment")
+            # Overall market sentiment
+            st.subheader("Overall Market Sentiment")
+            avg_sentiment = sentiment_df['composite_sentiment'].mean()
             
-            for idx, row in sentiment_df.iterrows():
-                with st.container():
-                    cols = st.columns([2, 2, 1, 1, 1])
-                    with cols[0]:
-                        st.write(f"**{row['symbol']}**")
-                    with cols[1]:
-                        st.write(format_number(row['price']))
-                    with cols[2]:
-                        st.write(f"{row['change']:+.2f}%")
-                    with cols[3]:
-                        st.write(f"{row['price_emoji']}")
-                    with cols[4]:
-                        st.write(f"{row['volume_emoji']}")
+            # Create composite sentiment gauge
+            sentiment_fig = create_gauge_chart(avg_sentiment, "Market Sentiment Score")
+            st.plotly_chart(sentiment_fig, use_container_width=True)
+            
+            # Individual stock analysis
+            st.subheader("Individual Stock Sentiment Analysis")
+            
+            # Add filters
+            col1, col2 = st.columns(2)
+            with col1:
+                sentiment_filter = st.selectbox(
+                    "Filter by Sentiment",
+                    ["All", "Bullish", "Bearish", "Neutral"]
+                )
+            
+            # Filter dataframe based on selection
+            filtered_df = sentiment_df
+            if sentiment_filter == "Bullish":
+                filtered_df = sentiment_df[sentiment_df['composite_sentiment'] > 0.2]
+            elif sentiment_filter == "Bearish":
+                filtered_df = sentiment_df[sentiment_df['composite_sentiment'] < -0.2]
+            elif sentiment_filter == "Neutral":
+                filtered_df = sentiment_df[
+                    (sentiment_df['composite_sentiment'] >= -0.2) & 
+                    (sentiment_df['composite_sentiment'] <= 0.2)
+                ]
+            
+            # Display individual stock sentiments
+            for idx, row in filtered_df.iterrows():
+                with st.expander(f"{row['symbol']} - {row['name']}"):
+                    # Create three columns for different sentiment metrics
+                    col1, col2, col3 = st.columns(3)
                     
-                    st.divider()
+                    with col1:
+                        st.metric(
+                            "Price",
+                            f"${row['price']:.2f}",
+                            f"{row['change']:+.2f}%"
+                        )
+                    
+                    with col2:
+                        st.write("Sentiment Score:")
+                        sentiment_fig = create_gauge_chart(
+                            row['composite_sentiment'],
+                            "Overall Sentiment"
+                        )
+                        st.plotly_chart(sentiment_fig, use_container_width=True)
+                    
+                    with col3:
+                        st.write("Sentiment Breakdown:")
+                        st.write(f"News Sentiment: {row['sentiment_emoji']}")
+                        st.write(f"Analyst Rating: {format_number(row['analyst_sentiment'])}")
+                        
+                    # Show detailed analyst recommendations if available
+                    if row['analyst_data']:
+                        st.write("Analyst Recommendations:")
+                        rec = row['analyst_data']
+                        cols = st.columns(5)
+                        cols[0].metric("Strong Buy", rec.get('strongBuy', 0))
+                        cols[1].metric("Buy", rec.get('buy', 0))
+                        cols[2].metric("Hold", rec.get('hold', 0))
+                        cols[3].metric("Sell", rec.get('sell', 0))
+                        cols[4].metric("Strong Sell", rec.get('strongSell', 0))
         else:
             st.error("Unable to fetch sentiment data")

@@ -5,6 +5,7 @@ description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
     "components>=0.0.1a0",
+    "finnhub-python>=2.4.22",
     "fuzzywuzzy>=0.18.0",
     "pandas>=2.2.3",
     "plotly>=5.24.1",
@@ -12,6 +13,8 @@ dependencies = [
     "python-levenshtein>=0.26.1",
     "scikit-learn>=1.6.0",
     "streamlit>=1.41.1",
+    "textblob>=0.18.0.post0",
     "trafilatura>=2.0.0",
+    "yahoo-fin>=0.8.9.1",
     "yfinance>=0.2.51",
 ]
