@@ -6,6 +6,17 @@ from components import portfolio, watchlist, trading, charts
 # Initialize the database
 Database.initialize()
 Database.create_tables()
+def create_default_user():
+    try:
+        # Create a default demo account
+        User.create('demo', 'demo123')
+        print("Default user created successfully")
+    except Exception as e:
+        if 'duplicate key value' not in str(e).lower():
+            print(f"Error creating default user: {e}")
+
+# Create default user
+create_default_user()
 
 # Page configuration
 st.set_page_config(

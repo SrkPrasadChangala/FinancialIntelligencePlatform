@@ -36,10 +36,12 @@ class Database:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(query, parameters)
                 conn.commit()
-                try:
+                if query.strip().upper().startswith('SELECT'):
                     return cur.fetchall()
-                except psycopg2.ProgrammingError:
-                    return None
+                return None
+        except Exception as e:
+            conn.rollback()
+            raise e
         finally:
             cls.return_connection(conn)
 
