@@ -23,6 +23,10 @@ args = "Stock Trading Platform"
 task = "workflow.run"
 args = "Flask API"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "React Frontend"
+
 [[workflows.workflow]]
 name = "Stock Trading Platform"
 author = "agent"
@@ -52,6 +56,25 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "python api.py"
 waitForPort = 3001
+
+[[workflows.workflow]]
+name = "React Frontend"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd frontend && npm start"
+waitForPort = 3000
+
+[[ports]]
+localPort = 3000
+externalPort = 3000
 
 [[ports]]
 localPort = 3001

@@ -9,15 +9,29 @@ class Database:
     @classmethod
     def initialize(cls):
         if not cls._connection_pool:
-            cls._connection_pool = psycopg2.pool.SimpleConnectionPool(
-                minconn=1,
-                maxconn=10,
-                host=os.getenv('PGHOST'),
-                database=os.getenv('PGDATABASE'),
-                user=os.getenv('PGUSER'),
-                password=os.getenv('PGPASSWORD'),
-                port=os.getenv('PGPORT')
-            )
+            try:
+                database_url = os.getenv('DATABASE_URL')
+                if database_url:
+                    cls._connection_pool = psycopg2.pool.SimpleConnectionPool(
+                        minconn=1,
+                        maxconn=10,
+                        dsn=database_url
+                    )
+                else:
+                    # Fallback to individual parameters
+                    cls._connection_pool = psycopg2.pool.SimpleConnectionPool(
+                        minconn=1,
+                        maxconn=10,
+                        host=os.getenv('PGHOST'),
+                        database=os.getenv('PGDATABASE'),
+                        user=os.getenv('PGUSER'),
+                        password=os.getenv('PGPASSWORD'),
+                        port=os.getenv('PGPORT')
+                    )
+                print("Database connection pool initialized successfully")
+            except Exception as e:
+                print(f"Failed to initialize database connection pool: {str(e)}")
+                raise
 
     @classmethod
     def get_connection(cls):
