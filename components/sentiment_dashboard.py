@@ -80,6 +80,8 @@ def analyze_market_sentiment(symbols):
                         'sentiment_emoji': get_sentiment_emoji(sentiment['composite']),
                         'analyst_data': sentiment['analyst_data']
                     })
+                except Exception as e:
+                    st.warning(f"Error processing data for {symbol}: {str(e)}")
         except Exception as e:
             st.warning(f"Error analyzing sentiment for {symbol}: {str(e)}")
             continue
@@ -103,15 +105,25 @@ def render_sentiment_dashboard(symbols):
         if not sentiment_df.empty:
             # Market Fear Index (VIX)
             st.subheader("Market Fear Index (VIX)")
-            vix_value = sentiment_df['vix'].iloc[0]  # Same for all rows
-            vix_change = sentiment_df['vix_change'].iloc[0]
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("VIX", f"{vix_value:.2f}", f"{vix_change:+.2f}%")
-            with col2:
-                fear_fig = create_gauge_chart(-sentiment_df['fear_index'].mean(), "Market Fear Level")
-                st.plotly_chart(fear_fig, use_container_width=True)
+            try:
+                vix_value = sentiment_df['vix'].iloc[0]  # Same for all rows
+                vix_change = sentiment_df['vix_change'].iloc[0]
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if vix_value is not None:
+                        st.metric("VIX", f"{vix_value:.2f}", f"{vix_change:+.2f}%")
+                    else:
+                        st.metric("VIX", "N/A", "N/A")
+                with col2:
+                    fear_index = -sentiment_df['fear_index'].mean()
+                    fear_fig = create_gauge_chart(
+                        fear_index if not pd.isna(fear_index) else 0,
+                        "Market Fear Level"
+                    )
+                    st.plotly_chart(fear_fig, use_container_width=True)
+            except Exception as e:
+                st.warning("Unable to display VIX data. Will continue with other sentiment indicators.")
             
             # Overall market sentiment
             st.subheader("Overall Market Sentiment")
