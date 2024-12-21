@@ -12,5 +12,6 @@ dependencies = [
     "python-levenshtein>=0.26.1",
     "scikit-learn>=1.6.0",
     "streamlit>=1.41.1",
+    "trafilatura>=2.0.0",
     "yfinance>=0.2.51",
 ]
