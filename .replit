@@ -21,11 +21,11 @@ args = "Streamlit App"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Flask API"
+args = "React Frontend"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "React Frontend"
+args = "Flask API"
 
 [[workflows.workflow]]
 name = "Streamlit App"
@@ -43,21 +43,6 @@ args = "streamlit run main.py --server.port 5000"
 waitForPort = 5000
 
 [[workflows.workflow]]
-name = "Flask API"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python api.py"
-waitForPort = 3001
-
-[[workflows.workflow]]
 name = "React Frontend"
 author = "agent"
 
@@ -71,6 +56,21 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "cd frontend && npm start"
 waitForPort = 3000
+
+[[workflows.workflow]]
+name = "Flask API"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python api.py"
+waitForPort = 3001
 
 [[ports]]
 localPort = 3000

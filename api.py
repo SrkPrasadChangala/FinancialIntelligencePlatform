@@ -11,8 +11,8 @@ from utils.sentiment_analyzer import SentimentAnalyzer
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+app = Flask(__name__, static_folder='frontend/build')
+CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000", "http://0.0.0.0:3000"]}})
 
 # Configure logging
 handler = logging.StreamHandler()
@@ -60,9 +60,16 @@ def health_check():
             'error': str(e)
         }), 500
 
+@app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
-    return send_from_directory('frontend/build', path)
+    try:
+        if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+            return send_from_directory(app.static_folder, path)
+        return send_from_directory(app.static_folder, 'index.html')
+    except Exception as e:
+        app.logger.error(f"Error serving static files: {str(e)}")
+        return jsonify({'error': 'Not found'}), 404
 
 
 @app.route('/api/auth/login', methods=['POST'])
