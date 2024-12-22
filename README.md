@@ -27,7 +27,7 @@ A cutting-edge financial intelligence platform that transforms complex market da
 ## 🛠️ Tech Stack
 
 - **Backend**: Python 3.11, Flask
-- **Frontend**: React, Streamlit
+- **Frontend**: Streamlit
 - **Data Processing**: Pandas, TextBlob
 - **Database**: PostgreSQL
 - **Visualization**: Plotly
